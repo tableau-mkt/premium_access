@@ -1,0 +1,4 @@
+name = Premium Content Access
+description = Keep track of access to specific content for specific users.
+core = 7.x
+dependencies[] = context
