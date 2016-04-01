@@ -41,4 +41,3 @@ class premium_access_condition extends context_condition {
     }
   }
 }
-?>

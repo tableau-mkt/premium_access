@@ -10,6 +10,7 @@
  */
 function premium_access_menu() {
   $items = array();
+
   $items['admin/config/people/premium_access'] = array(
     'title'             => t('Premium Content Access'),
     'description'       => t('Keep track of access to specific content for specific users.'),
@@ -18,7 +19,34 @@ function premium_access_menu() {
     'access arguments'  => array('access administration pages'),
     'file'              => 'premium_access.admin.inc',
   );
+  $items['user/premium/access'] = array(
+    'access callback' => TRUE,
+    'page callback' => 'premium_access_flag_exists',
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );
+  $items['user/premium/access/%'] = array(
+    'access callback' => TRUE,
+    'page callback' => 'premium_access_flag_exists',
+    'page arguments' => array(3),
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
+}
+
+/**
+ * Check if the (guest) user session is active.
+ * @see submit.js for clientside use.
+ */
+function premium_access_flag_exists($nid = null) {
+  $premium_access = isset($_SESSION['premium_access']);
+
+  if ($premium_access && $nid) {
+    return isset($_SESSION['premium_access'][$nid]);
+  }
+  return $premium_access;
 }
 
 
@@ -93,7 +121,7 @@ function premium_access_block_view($delta = '') {
   switch ($delta) {
     case 'premium_button':
       $block['subject'] = NULL;
-      if (_premium_access_block_visibility($delta)) {
+      if (_premium_access_block_visibility()) {
         $block['content'] = drupal_get_form('premium_access_button_form', $node);
       }
       else {
@@ -109,7 +137,7 @@ function premium_access_block_view($delta = '') {
 /**
  * Premium Access form for authenticated users.
  *
- * Should have CRM fields added.
+ * Recommended: add your CRM field here and the user registration form.
  */
 function premium_access_button_form($form, &$form_state, $node = FALSE) {
   $node_id = (is_object($node) && is_numeric($node->nid)) ? $node->nid : '';
@@ -144,12 +172,12 @@ function premium_access_form_user_register_form_alter(&$form, &$form_state, $for
 
 
 /**
- * Should the block be showing?
+ * Determine if the authenticated premium access button should be shown.
  *
- * @param {string} $delta
- *   Block delta name.
+ * @return boolean
+ *   TRUE if the user is authenticated.
  */
-function _premium_access_block_visibility($delta) {
+function _premium_access_block_visibility() {
   global $user;
   // Do not show premium button to anonymous users.
   if (!$user->uid == 0) {
